@@ -20,7 +20,7 @@
 </header>
 <main>
     <section class="carrito-container">
-        <h2>Tu Carrito</h2>
+        <h2 class="section-title">Tu carrito</h2>
         <div id="carrito-items"></div>
         <div id="carrito-resumen">
           <button id="btn-vaciar" onclick="vaciarCarrito()">Vaciar Carrito 🗑️</button>
@@ -42,6 +42,27 @@
         </div>
     </section>
 </main>
+<div id="pedido-confirmado-modal" class="pedido-modal" aria-hidden="true">
+  <div class="pedido-modal__backdrop" data-close-pedido></div>
+  <section class="pedido-modal__panel" role="dialog" aria-modal="true" aria-labelledby="pedido-confirmado-title">
+    <button type="button" class="pedido-modal__close" aria-label="Cerrar confirmacion" data-close-pedido>&times;</button>
+    <div class="pedido-modal__success" aria-hidden="true">&check;</div>
+    <p class="pedido-modal__eyebrow">Pedido confirmado</p>
+    <h2 id="pedido-confirmado-title">Tu compra ya esta en marcha</h2>
+    <p class="pedido-modal__copy">Hemos recibido tu pedido correctamente. Te enviaremos la confirmacion al correo indicado.</p>
+    <div class="pedido-modal__summary">
+      <div>
+        <span>Entrega estimada</span>
+        <strong id="pedido-fecha-estimada">Calculando...</strong>
+      </div>
+      <div>
+        <span>Direccion de entrega</span>
+        <strong id="pedido-direccion-confirmada">No disponible</strong>
+      </div>
+    </div>
+    <button type="button" class="pedido-modal__action" data-close-pedido>Volver al inicio</button>
+  </section>
+</div>
 <div id="loginModal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>

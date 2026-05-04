@@ -36,7 +36,8 @@ function agregarProducto(boton) {
     }
 
     const producto = {
-        id: tituloEl.innerText.replace(/\s+/g, '-').toLowerCase(),
+        id: card.dataset.productId || tituloEl.innerText.replace(/\s+/g, '-').toLowerCase(),
+        id_producto: Number(card.dataset.productId || 0),
         titulo: tituloEl.innerText,
         precio: precio,
         imagen: imgEl ? imgEl.src : '/img/future-album.jpg',

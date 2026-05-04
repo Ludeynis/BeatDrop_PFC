@@ -15,13 +15,17 @@
 
 #chat-abrir {
     position: fixed;
-    right: 24px;
-    bottom: 24px;
+    right: max(24px, env(safe-area-inset-right));
+    bottom: max(24px, env(safe-area-inset-bottom));
     z-index: 9999;
     display: inline-flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 12px;
+    width: auto;
+    max-width: calc(100vw - 32px);
     min-width: 208px;
+    min-height: 0;
     padding: 11px 15px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
@@ -32,6 +36,7 @@
     backdrop-filter: blur(16px);
     box-shadow: var(--chat-shadow);
     cursor: pointer;
+    isolation: isolate;
     transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
@@ -78,8 +83,8 @@
 
 #chat-ventana {
     position: fixed;
-    right: 24px;
-    bottom: 96px;
+    right: max(24px, env(safe-area-inset-right));
+    bottom: calc(max(24px, env(safe-area-inset-bottom)) + 72px);
     z-index: 9999;
     width: min(416px, calc(100vw - 32px));
     height: min(620px, calc(100vh - 128px));
@@ -394,19 +399,26 @@
 
 @media (max-width: 680px) {
     #chat-abrir {
-        right: 14px;
-        bottom: 14px;
-        min-width: auto;
-        width: calc(100vw - 28px);
-        justify-content: flex-start;
+        right: max(14px, env(safe-area-inset-right));
+        bottom: max(14px, env(safe-area-inset-bottom));
+        width: auto;
+        max-width: calc(100vw - 28px);
+        min-width: 0;
+        min-height: 48px;
+        padding: 10px 14px;
+        gap: 10px;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        white-space: nowrap;
     }
 
     #chat-ventana {
-        right: 14px;
-        left: 14px;
-        bottom: 84px;
+        right: max(12px, env(safe-area-inset-right));
+        left: max(12px, env(safe-area-inset-left));
+        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 70px);
         width: auto;
-        height: min(76vh, calc(100vh - 104px));
+        height: min(76vh, calc(100dvh - 96px));
+        border-radius: 20px;
     }
 
     #chat-mensajes {
@@ -429,5 +441,22 @@
     .bot-producto img {
         width: 64px;
         height: 76px;
+    }
+}
+
+@media (max-width: 380px) {
+    #chat-abrir {
+        right: 10px;
+        bottom: 10px;
+        max-width: calc(100vw - 20px);
+        padding: 9px 12px;
+        font-size: 0.9rem;
+    }
+
+    #chat-ventana {
+        right: 8px;
+        left: 8px;
+        bottom: 74px;
+        height: min(78vh, calc(100dvh - 88px));
     }
 }

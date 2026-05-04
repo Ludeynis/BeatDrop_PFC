@@ -23,8 +23,8 @@
   </header>
   <section class="catalogo-container">
     <section class="catalogo">
-      <h2>📀 CATÁLOGO COMPLETO</h2>
-      <aside class="filtros">
+      <h2 class="catalogo-title"><span aria-hidden="true"></span>Catalogo completo</h2>
+      <aside class="filtros" aria-label="Filtros del catalogo">
         <div class="filtro-grupo">
           <h4>Género</h4>
           <div class="botones-filtro">
@@ -42,6 +42,7 @@
         <div class="filtro">
           <h4>Formato</h4>
           <div class="botones-filtro">
+            <button class="active">Todos</button>
             <button>Vinilo</button>
             <button>CD</button>
             <button>Cassette</button>
@@ -52,7 +53,7 @@
       <section class="cards">
         <?php if (count($productos_db) > 0): ?>
           <?php foreach ($productos_db as $producto): ?>
-            <article data-genero="<?php echo htmlspecialchars($producto['genero'] ?? ''); ?>" data-formato="<?php echo htmlspecialchars($producto['formato'] ?? ''); ?>">
+            <article data-product-id="<?php echo (int)$producto['id_producto']; ?>" data-genero="<?php echo htmlspecialchars($producto['genero'] ?? ''); ?>" data-formato="<?php echo htmlspecialchars($producto['formato'] ?? ''); ?>">
               <img src="<?php echo !empty($producto['imagen_url']) ? '/' . ltrim(htmlspecialchars($producto['imagen_url']), '/') : '/img/future-album.jpg'; ?>" alt="<?php echo htmlspecialchars($producto['nombre']); ?>" class="album-img" />
               <h3><?php echo htmlspecialchars($producto['nombre']); ?></h3>
               <p><?php echo htmlspecialchars($producto['genero'] ?? 'Varios'); ?> / <?php echo htmlspecialchars($producto['formato'] ?? 'Físico'); ?></p>

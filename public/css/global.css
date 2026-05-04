@@ -19,10 +19,12 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
+  background: #f9f7f6;
 }
 
 main {
   flex: 1;
+  background: #f9f7f6;
 }
 
 
@@ -1365,5 +1367,50 @@ header nav a:hover::after {
 
     header nav.nav-abierta {
         display: flex;
+    }
+}
+
+/* Ajuste de fondo para Inicio y Albumes: evita franjas blancas laterales */
+body:has(.catalogo),
+body:has(.catalogo-container) {
+    background: #f9f7f6;
+}
+
+body:has(.catalogo) main,
+.catalogo-container {
+    width: 100%;
+    background: #f9f7f6;
+}
+
+body:has(.catalogo) .catalogo,
+body:has(.catalogo) .novedades,
+body:has(.catalogo) .ofertas {
+    width: min(100%, 1100px);
+}
+
+/* Titulos de seccion BeatDrop */
+.section-title,
+.catalogo h2.section-title,
+.novedades h2.section-title,
+.carrito-container h2.section-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    color: #1c1c1c;
+    font-size: clamp(1.7rem, 3vw, 2.35rem);
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: center;
+    letter-spacing: 0;
+}
+
+@media (max-width: 768px) {
+    .section-title,
+    .catalogo h2.section-title,
+    .novedades h2.section-title,
+    .carrito-container h2.section-title {
+        margin-bottom: 22px;
+        font-size: clamp(1.55rem, 7vw, 2rem);
     }
 }

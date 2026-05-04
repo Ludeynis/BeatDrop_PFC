@@ -12,11 +12,16 @@
     const viewLinks = Array.from(document.querySelectorAll('[data-view-link]'));
 
     const modal = document.getElementById('productModal');
+    const orderModal = document.getElementById('orderModal');
+    const orderModalTitle = document.getElementById('orderModalTitle');
+    const orderModalSubtitle = document.getElementById('orderModalSubtitle');
+    const orderDetailContent = document.getElementById('orderDetailContent');
     const form = document.getElementById('productForm');
     const modalTitle = document.getElementById('productModalTitle');
     const submitBtn = document.getElementById('productSubmit');
     const deleteForm = document.getElementById('productDeleteForm');
     const productTableBody = document.querySelector('#view-productos tbody');
+    const orderTableBody = document.querySelector('[data-orders-body]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     const fieldNombre = document.getElementById('fieldNombre');
@@ -59,6 +64,185 @@
 
     function euro(value) {
         return `${Number(value || 0).toFixed(2)} EUR`;
+    }
+
+    function updateOrderMetrics(total) {
+        document.querySelectorAll('[data-order-count]').forEach((node) => {
+            node.textContent = String(Number(total || 0));
+        });
+    }
+
+    function statusOptions(estado) {
+        const estados = [
+            ['pendiente', 'Pendiente'],
+            ['enviado', 'Enviado'],
+            ['entregado', 'Entregado'],
+            ['simulado', 'Cancelado']
+        ];
+
+        return estados.map(([value, label]) => (
+            `<option value="${value}" ${estado === value ? 'selected' : ''}>${label}</option>`
+        )).join('');
+    }
+
+    function orderRowHtml(order) {
+        const estado = order.estado || 'pendiente';
+        return `
+            <td class="cell-muted" data-label="ID">#${Number(order.id_pedido || 0)}</td>
+            <td class="cell-strong" data-label="Usuario">
+                <div class="order-user-cell">
+                    <strong>${escapeHtml(order.usuario_nombre || '')}</strong>
+                    <span>${escapeHtml(order.usuario_email || '')}</span>
+                </div>
+            </td>
+            <td class="cell-muted" data-label="Fecha">${escapeHtml(order.fecha_pedido || '')}</td>
+            <td class="cell-strong" data-label="Total"><span class="order-total-cell">${euro(order.total || 0)}</span></td>
+            <td data-label="Estado">
+                <select class="status-select" data-status value="${escapeHtml(estado)}">
+                    ${statusOptions(estado)}
+                </select>
+            </td>
+            <td class="td-actions" data-label="Detalle">
+                <button type="button" class="btn btn-ghost btn-sm" data-action="view-order" data-order-id="${Number(order.id_pedido || 0)}">Ver detalle</button>
+            </td>
+        `;
+    }
+
+    function orderImage(path) {
+        const src = imageUrl(path);
+        return src
+            ? `<img src="${escapeHtml(src)}" alt="" class="order-item-thumb">`
+            : '<div class="order-item-thumb order-item-thumb-empty">Sin foto</div>';
+    }
+
+    function renderOrderDetail(order) {
+        if (!orderDetailContent) return;
+
+        const items = Array.isArray(order.items) ? order.items : [];
+        const itemsHtml = items.length
+            ? items.map((item) => `
+                <div class="order-item-row">
+                    ${orderImage(item.imagen_url || '')}
+                    <div class="order-item-main">
+                        <strong>${escapeHtml(item.nombre || 'Producto')}</strong>
+                        <span>${escapeHtml([item.genero, item.formato].filter(Boolean).join(' / ') || 'Sin categoria')}</span>
+                    </div>
+                    <div class="order-item-qty">x${Number(item.cantidad || 0)}</div>
+                    <div class="order-item-price">${euro(item.subtotal || 0)}</div>
+                </div>
+            `).join('')
+            : '<p class="text-muted">Este pedido no tiene lineas asociadas.</p>';
+
+        orderDetailContent.innerHTML = `
+            <section class="order-summary-grid">
+                <div>
+                    <span>Cliente</span>
+                    <strong>${escapeHtml(order.usuario_nombre || 'Cliente')}</strong>
+                    <small>${escapeHtml(order.usuario_email || '')}</small>
+                </div>
+                <div>
+                    <span>Estado</span>
+                    <strong>${escapeHtml(order.estado || 'pendiente')}</strong>
+                </div>
+                <div>
+                    <span>Fecha</span>
+                    <strong>${escapeHtml(order.fecha_pedido || '')}</strong>
+                </div>
+                <div>
+                    <span>Total</span>
+                    <strong>${euro(order.total || 0)}</strong>
+                </div>
+            </section>
+
+            <section class="order-address">
+                <span>Direccion de entrega</span>
+                <strong>${escapeHtml(order.direccion_envio || 'No indicada')}</strong>
+            </section>
+
+            <section class="order-items">
+                <div class="order-section-title">Productos</div>
+                ${itemsHtml}
+            </section>
+        `;
+    }
+
+    function openOrderModal() {
+        if (!orderModal) return;
+        orderModal.classList.add('is-open');
+        orderModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+    }
+
+    function closeOrderModal() {
+        if (!orderModal) return;
+        orderModal.classList.remove('is-open');
+        orderModal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+    }
+
+    async function loadOrderDetail(orderId) {
+        if (!orderId) return;
+
+        if (orderModalTitle) orderModalTitle.textContent = `Pedido #${Number(orderId)}`;
+        if (orderModalSubtitle) orderModalSubtitle.textContent = 'Cargando detalle...';
+        if (orderDetailContent) orderDetailContent.innerHTML = '<p class="text-muted">Cargando productos y datos de entrega...</p>';
+        openOrderModal();
+
+        try {
+            const response = await fetch(`/admin/pedidos/detalle/${Number(orderId)}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success || !result.pedido) {
+                if (orderDetailContent) orderDetailContent.innerHTML = `<p class="text-muted">${escapeHtml(result.message || 'No se pudo cargar el pedido.')}</p>`;
+                return;
+            }
+
+            const order = result.pedido;
+            if (orderModalTitle) orderModalTitle.textContent = `Pedido #${Number(order.id_pedido || orderId)}`;
+            if (orderModalSubtitle) orderModalSubtitle.textContent = `${order.usuario_nombre || 'Cliente'} - ${euro(order.total || 0)}`;
+            renderOrderDetail(order);
+        } catch (error) {
+            console.error('Error loading order detail:', error);
+            if (orderDetailContent) orderDetailContent.innerHTML = '<p class="text-muted">Error de conexion al cargar el detalle.</p>';
+        }
+    }
+
+    function renderOrders(orders) {
+        if (!orderTableBody) return;
+
+        orderTableBody.innerHTML = '';
+        if (!Array.isArray(orders) || orders.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="6" class="cell-muted">Todavia no hay pedidos.</td>';
+            orderTableBody.appendChild(row);
+            return;
+        }
+
+        for (const order of orders) {
+            const row = document.createElement('tr');
+            row.innerHTML = orderRowHtml(order);
+            orderTableBody.appendChild(row);
+            syncStatusSelect(row.querySelector('[data-status]'));
+        }
+    }
+
+    async function refreshOrders() {
+        if (!orderTableBody) return;
+
+        try {
+            const response = await fetch('/admin/pedidos/latest', {
+                headers: { 'Accept': 'application/json' }
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) return;
+
+            updateOrderMetrics(result.total);
+            renderOrders(result.pedidos);
+        } catch (error) {
+            console.error('Error refreshing orders:', error);
+        }
     }
 
     function imageUrl(path) {
@@ -429,12 +613,28 @@
         if (closeBtn) closeModal();
     });
 
+    document.addEventListener('click', (e) => {
+        const orderBtn = e.target.closest('[data-action="view-order"]');
+        if (!orderBtn) return;
+        loadOrderDetail(orderBtn.getAttribute('data-order-id'));
+    });
+
+    document.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('[data-action="close-order-modal"]');
+        if (closeBtn) closeOrderModal();
+    });
+
     modal?.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
     });
 
+    orderModal?.addEventListener('click', (e) => {
+        if (e.target === orderModal) closeOrderModal();
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal?.classList.contains('is-open')) closeModal();
+        if (e.key === 'Escape' && orderModal?.classList.contains('is-open')) closeOrderModal();
     });
 
     document.addEventListener('click', (e) => {
@@ -583,4 +783,8 @@
     });
 
     updateProductMetrics();
+    refreshOrders();
+    if (orderTableBody) {
+        setInterval(refreshOrders, 15000);
+    }
 })();

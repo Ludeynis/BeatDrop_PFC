@@ -16,6 +16,8 @@ $pedidos = $pdo->query(
      LIMIT 50'
 )->fetchAll();
 
+$totalPedidos = (int)$pdo->query('SELECT COUNT(*) FROM pedidos')->fetchColumn();
+
 $usuarios = $pdo->query(
     'SELECT id_usuario, nombre, email, rol
      FROM usuarios
@@ -24,7 +26,6 @@ $usuarios = $pdo->query(
 )->fetchAll();
 
 $totalProductos = count($productos);
-$totalPedidos = count($pedidos);
 $totalUsuarios = count($usuarios);
 $stockBajo = 0;
 foreach ($productos as $p) {
@@ -61,7 +62,7 @@ foreach ($productos as $p) {
             </a>
             <a href="#pedidos" data-view-link="pedidos">
                 <span>Pedidos</span>
-                <span class="nav-count"><?php echo (int)$totalPedidos; ?></span>
+                <span class="nav-count" data-order-count><?php echo (int)$totalPedidos; ?></span>
             </a>
             <a href="#usuarios" data-view-link="usuarios">
                 <span>Usuarios</span>
@@ -97,7 +98,7 @@ foreach ($productos as $p) {
 
                     <article class="card">
                         <h2>Pedidos</h2>
-                        <p><strong><?php echo (int)$totalPedidos; ?></strong> recientes. Cambia estados rapido para mantener operaciones al dia.</p>
+                        <p><strong data-order-count><?php echo (int)$totalPedidos; ?></strong> registrados. Cambia estados rapido para mantener operaciones al dia.</p>
                         <div class="card-actions">
                             <button class="btn btn-primary" type="button" data-action="go-view" data-target="pedidos">Ver pedidos</button>
                         </div>
@@ -199,7 +200,7 @@ foreach ($productos as $p) {
                 </div>
 
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table orders-table">
                         <thead>
                         <tr>
                             <th>ID</th>
@@ -207,22 +208,32 @@ foreach ($productos as $p) {
                             <th>Fecha</th>
                             <th>Total</th>
                             <th>Estado</th>
+                            <th class="th-actions">Detalle</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody data-orders-body>
                         <?php foreach ($pedidos as $p): ?>
                             <?php $estado = (string)($p['estado'] ?? 'pendiente'); ?>
                             <tr>
-                                <td class="cell-muted">#<?php echo (int)$p['id_pedido']; ?></td>
-                                <td class="cell-strong"><?php echo htmlspecialchars((string)($p['usuario_nombre'] ?? '')); ?> <span class="cell-muted"><?php echo htmlspecialchars((string)($p['usuario_email'] ?? '')); ?></span></td>
-                                <td class="cell-muted"><?php echo htmlspecialchars((string)($p['fecha_pedido'] ?? '')); ?></td>
-                                <td class="cell-strong"><?php echo number_format((float)($p['total'] ?? 0), 2); ?> EUR</td>
-                                <td>
+                                <td class="cell-muted" data-label="ID">#<?php echo (int)$p['id_pedido']; ?></td>
+                                <td class="cell-strong" data-label="Usuario">
+                                    <div class="order-user-cell">
+                                        <strong><?php echo htmlspecialchars((string)($p['usuario_nombre'] ?? '')); ?></strong>
+                                        <span><?php echo htmlspecialchars((string)($p['usuario_email'] ?? '')); ?></span>
+                                    </div>
+                                </td>
+                                <td class="cell-muted" data-label="Fecha"><?php echo htmlspecialchars((string)($p['fecha_pedido'] ?? '')); ?></td>
+                                <td class="cell-strong" data-label="Total"><span class="order-total-cell"><?php echo number_format((float)($p['total'] ?? 0), 2); ?> EUR</span></td>
+                                <td data-label="Estado">
                                     <select class="status-select" data-status value="<?php echo htmlspecialchars($estado); ?>">
                                         <option value="pendiente" <?php echo $estado === 'pendiente' ? 'selected' : ''; ?>>Pendiente</option>
                                         <option value="enviado" <?php echo $estado === 'enviado' ? 'selected' : ''; ?>>Enviado</option>
+                                        <option value="entregado" <?php echo $estado === 'entregado' ? 'selected' : ''; ?>>Entregado</option>
                                         <option value="simulado" <?php echo $estado === 'simulado' ? 'selected' : ''; ?>>Cancelado</option>
                                     </select>
+                                </td>
+                                <td class="td-actions" data-label="Detalle">
+                                    <button type="button" class="btn btn-ghost btn-sm" data-action="view-order" data-order-id="<?php echo (int)$p['id_pedido']; ?>">Ver detalle</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -268,6 +279,25 @@ foreach ($productos as $p) {
                 </div>
             </section>
         </main>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="orderModal" aria-hidden="true">
+    <div class="modal order-modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+        <div class="modal-header">
+            <div>
+                <h2 class="modal-title" id="orderModalTitle">Detalle del pedido</h2>
+                <p class="order-modal-subtitle" id="orderModalSubtitle">Cargando pedido...</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-icon" data-action="close-order-modal" aria-label="Cerrar">
+                X
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="orderDetailContent" class="order-detail-content">
+                <p class="text-muted">Selecciona un pedido para ver sus detalles.</p>
+            </div>
+        </div>
     </div>
 </div>
 

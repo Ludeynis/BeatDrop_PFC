@@ -1,35 +1,160 @@
 document.addEventListener('DOMContentLoaded', () => {
     pintarCarrito();
 
-    // Comprobar estado inicial del formulario
     const envioForm = document.getElementById('envio-form');
     if (envioForm) {
         envioForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // Evita que la página se recargue de golpe
-            
-            // 1. Mensaje de éxito
-            alert("¡Pedido confirmado con éxito! Gracias por tu compra.");
-            
-            // 2. CORRECCIÓN: Borramos el carrito DIRECTAMENTE (silencioso)
-            // En lugar de llamar a vaciarCarrito(), hacemos esto:
-            localStorage.removeItem('carrito'); 
-            
-            // 3. Redirigimos al inicio
-            window.location.href = 'index.html';
+            e.preventDefault();
+
+            const datosPedido = obtenerDatosPedido();
+            confirmarPedido(datosPedido);
         });
     }
+
+    document.querySelectorAll('[data-close-pedido]').forEach((elemento) => {
+        elemento.addEventListener('click', cerrarConfirmacionPedido);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('pedido-confirmado-modal');
+        if (e.key === 'Escape' && modal?.classList.contains('is-visible')) {
+            cerrarConfirmacionPedido();
+        }
+    });
 });
+
+function obtenerDatosPedido() {
+    const nombre = document.getElementById('nombre-envio')?.value.trim() || '';
+    const email = document.getElementById('email-envio')?.value.trim() || '';
+    const direccion = document.getElementById('direccion-envio')?.value.trim() || 'Direccion no indicada';
+    const ciudad = document.getElementById('ciudad-envio')?.value.trim();
+    const cp = document.getElementById('cp-envio')?.value.trim();
+    const direccionCompleta = [direccion, ciudad, cp].filter(Boolean).join(', ');
+
+    return {
+        nombre,
+        email,
+        direccion: direccionCompleta,
+        fechaEstimada: calcularRangoEntrega()
+    };
+}
+
+async function confirmarPedido(datosPedido) {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const submitBtn = document.querySelector('#envio-form .btn-pagar');
+
+    if (carrito.length === 0) {
+        alert('Tu carrito esta vacio.');
+        return;
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Confirmando pedido...';
+    }
+
+    try {
+        const response = await fetch('/carrito/confirmar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ...datosPedido,
+                items: carrito
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            alert(result.message || 'No se pudo confirmar el pedido.');
+            return;
+        }
+
+        localStorage.removeItem('carrito');
+        pintarCarrito();
+        mostrarConfirmacionPedido({
+            ...datosPedido,
+            fechaEstimada: result.fecha_estimada || datosPedido.fechaEstimada
+        });
+    } catch (error) {
+        console.error('Error confirmando pedido:', error);
+        alert('Error de conexion al confirmar el pedido.');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Confirmar Pedido y Pagar';
+        }
+    }
+}
+
+function calcularRangoEntrega() {
+    const inicio = sumarDiasHabiles(new Date(), 3);
+    const fin = sumarDiasHabiles(new Date(), 5);
+    const formato = new Intl.DateTimeFormat('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'long'
+    });
+
+    return `${formato.format(inicio)} - ${formato.format(fin)}`;
+}
+
+function sumarDiasHabiles(fecha, dias) {
+    const resultado = new Date(fecha);
+    let sumados = 0;
+
+    while (sumados < dias) {
+        resultado.setDate(resultado.getDate() + 1);
+        const diaSemana = resultado.getDay();
+        if (diaSemana !== 0 && diaSemana !== 6) {
+            sumados++;
+        }
+    }
+
+    return resultado;
+}
+
+function mostrarConfirmacionPedido(datosPedido) {
+    const modal = document.getElementById('pedido-confirmado-modal');
+    const fecha = document.getElementById('pedido-fecha-estimada');
+    const direccion = document.getElementById('pedido-direccion-confirmada');
+
+    if (!modal) {
+        alert(`Pedido confirmado. Entrega estimada: ${datosPedido.fechaEstimada}`);
+        window.location.href = '/';
+        return;
+    }
+
+    if (fecha) fecha.textContent = datosPedido.fechaEstimada;
+    if (direccion) direccion.textContent = datosPedido.direccion;
+
+    modal.classList.add('is-visible');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('pedido-modal-open');
+}
+
+function cerrarConfirmacionPedido() {
+    const modal = document.getElementById('pedido-confirmado-modal');
+    if (modal) {
+        modal.classList.remove('is-visible');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('pedido-modal-open');
+    window.location.href = '/';
+}
 
 function normalizarTextoCarrito(texto) {
     const value = String(texto || '');
     return value
-        .replace(/Ã¢â‚¬â€œ|â€“/g, '-')
-        .replace(/ÃƒÂ³|Ã³/g, 'o')
-        .replace(/Ã¡/g, 'a')
-        .replace(/Ã©/g, 'e')
-        .replace(/Ã­/g, 'i')
-        .replace(/Ãº/g, 'u')
-        .replace(/Ã±/g, 'n')
+        .replace(/ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“|Ã¢â‚¬â€œ/g, '-')
+        .replace(/ÃƒÆ’Ã‚Â³|ÃƒÂ³/g, 'o')
+        .replace(/ÃƒÂ¡/g, 'a')
+        .replace(/ÃƒÂ©/g, 'e')
+        .replace(/ÃƒÂ­/g, 'i')
+        .replace(/ÃƒÂº/g, 'u')
+        .replace(/ÃƒÂ±/g, 'n')
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -59,16 +184,14 @@ function pintarCarrito() {
     if (!contenedor) return;
     contenedor.innerHTML = '';
     
-    // CASO: Carrito Vacío
     if (carrito.length === 0) {
-        contenedor.innerHTML = '<p style="text-align:center; padding:30px; color:#777;">Tu carrito está vacío.</p>';
+        contenedor.innerHTML = '<p style="text-align:center; padding:30px; color:#777;">Tu carrito esta vacio.</p>';
         if (totalElemento) totalElemento.innerText = 'Total: $0.00';
         if (btnFinalizar) btnFinalizar.style.display = 'none';
         if (btnVaciar) btnVaciar.style.display = 'none';
         return;
     }
 
-    // CASO: Hay productos
     if (btnFinalizar) btnFinalizar.style.display = 'inline-block';
     if (btnVaciar) btnVaciar.style.display = 'inline-block';
 
@@ -80,9 +203,8 @@ function pintarCarrito() {
         totalCaja += precio * cantidad;
 
         const div = document.createElement('div');
-        div.classList.add('carrito-item'); // Clase definida en CSS
+        div.classList.add('carrito-item');
         
-        // HTML LIMPIO: Usamos clases en lugar de style=""
         div.innerHTML = `
             <img src="${item.imagen}" alt="${item.titulo}" class="img-producto">
             <div class="carrito-info">
@@ -101,15 +223,12 @@ function pintarCarrito() {
     if (totalElemento) totalElemento.innerText = `Total: $${totalCaja.toFixed(2)}`;
 }
 
-// 1. LÓGICA MODIFICADA: Restar uno a uno
 window.eliminarDelCarrito = function(index) {
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
     
-    // Si hay más de 1, restamos cantidad
     if (carrito[index].cantidad > 1) {
         carrito[index].cantidad--;
     } else {
-        // Si solo queda 1, lo borramos del array
         carrito.splice(index, 1);
     }
     
@@ -117,9 +236,8 @@ window.eliminarDelCarrito = function(index) {
     pintarCarrito();
 };
 
-// 2. NUEVA FUNCIÓN: Borrar todo de golpe
 window.vaciarCarrito = function() {
-    if (confirm("¿Estás seguro de que quieres vaciar todo el carrito?")) {
+    if (confirm("Estas seguro de que quieres vaciar todo el carrito?")) {
         localStorage.removeItem('carrito');
         pintarCarrito();
     }
@@ -132,7 +250,7 @@ window.checkUserAndCheckout = function() {
 
     if (!usuarioActivo) {
         if (formEntrega) formEntrega.style.display = 'none';
-        alert("Acceso denegado: La cuenta no existe o no has iniciado sesión.");
+        alert("Acceso denegado: la cuenta no existe o no has iniciado sesion.");
         const modal = document.getElementById('loginModal');
         if (modal) modal.style.display = 'flex';
     } else {

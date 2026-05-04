@@ -21,10 +21,10 @@
 </header>
 <main>
     <section class="catalogo">
-        <h2>Artistas destacados</h2>
+        <h2 class="section-title">Artistas destacados</h2>
         <section class="cards">
             <?php foreach ($destacados as $prod): ?>
-                <article>
+                <article data-product-id="<?php echo (int)$prod['id_producto']; ?>">
                     <img src="/<?php echo ltrim(htmlspecialchars($prod['imagen_url']), '/'); ?>" alt="<?php echo htmlspecialchars($prod['nombre']); ?>" class="album-img" />
                     <h3><?php echo htmlspecialchars($prod['nombre']); ?></h3>
                     <p><?php echo htmlspecialchars($prod['genero']); ?> / <?php echo htmlspecialchars($prod['formato']); ?></p>
@@ -39,10 +39,10 @@
         </section>
     </section>
     <section class="novedades">
-        <h2>Novedades</h2>
+        <h2 class="section-title">Novedades</h2>
         <section class="cards">
             <?php foreach ($novedades as $prod): ?>
-                <article>
+                <article data-product-id="<?php echo (int)$prod['id_producto']; ?>">
                     <img src="/<?php echo ltrim(htmlspecialchars($prod['imagen_url']), '/'); ?>" alt="<?php echo htmlspecialchars($prod['nombre']); ?>" class="album-img" />
                     <h3><?php echo htmlspecialchars($prod['nombre']); ?></h3>
                     <p><?php echo htmlspecialchars($prod['genero']); ?> / <?php echo htmlspecialchars($prod['formato']); ?></p>
@@ -57,10 +57,10 @@
         </section>
     </section>
     <section class="catalogo">
-        <h2>Ofertas</h2>
+        <h2 class="section-title">Ofertas</h2>
         <section class="cards">
             <?php foreach ($ofertas as $prod): $precio_antiguo = $prod['precio'] * 1.20; ?>
-                <article>
+                <article data-product-id="<?php echo (int)$prod['id_producto']; ?>">
                     <img src="/<?php echo ltrim(htmlspecialchars($prod['imagen_url']), '/'); ?>" alt="<?php echo htmlspecialchars($prod['nombre']); ?>" class="album-img" />
                     <h3><?php echo htmlspecialchars($prod['nombre']); ?></h3>
                     <p><?php echo htmlspecialchars($prod['genero']); ?> / <?php echo htmlspecialchars($prod['formato']); ?></p>
